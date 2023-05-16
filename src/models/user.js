@@ -1,10 +1,9 @@
-const mongoose = require('mongoose');
-const validator = require('validator');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const mongoose = require("mongoose");
+const validator = require("validator");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
-
-const userSchema = new mongoose.Schema( {
+const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -14,7 +13,7 @@ const userSchema = new mongoose.Schema( {
     type: Number,
     validate(value) {
       if (value < 0) {
-        throw new Error('Age Must be positive number');
+        throw new Error("Age Must be positive number");
       }
     },
   },
@@ -24,7 +23,7 @@ const userSchema = new mongoose.Schema( {
     unique: true,
     validate(value) {
       if (!validator.isEmail(value)) {
-        throw new Error('In valid Email');
+        throw new Error("In valid Email");
       }
     },
   },
@@ -33,67 +32,72 @@ const userSchema = new mongoose.Schema( {
     required: true,
     minlength: 7,
     validate(value) {
-      if (value.includes('password')) {
-        throw new Error('Incorrect format for password');
+      if (value.includes("password")) {
+        throw new Error("Incorrect format for password");
       }
     },
     trim: true,
   },
-  tokens: [{
-    token: {
-      type: String,
-      required: true,
+  tokens: [
+    {
+      token: {
+        type: String,
+        required: true,
+      },
     },
-  }],
+  ],
+  avatar:{
+    type:Buffer
+  }
+},{
+  timestamps:true
 });
 
-userSchema.virtual('tasks', {
-  ref: 'Tasks',
-  localField: '_id',
-  foreignField: 'owner',
+userSchema.virtual("tasks", {
+  ref: "Tasks",
+  localField: "_id",
+  foreignField: "owner",
 });
 
-userSchema.methods.generateAuthToken = async function() {
+userSchema.methods.generateAuthToken = async function () {
   const user = this;
-  const token =jwt.sign({_id: user._id.toString()}, 'thisismynewcourse');
-  user.tokens = user.tokens.concat({token});
+  const token = jwt.sign({ _id: user._id.toString() }, "thisismynewcourse");
+  user.tokens = user.tokens.concat({ token });
   await user.save();
   return token;
 };
 
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
-  console.log('1', userObject);
+  console.log("1", userObject);
   delete userObject.password;
   delete userObject.tokens;
-  console.log('2', userObject);
+  console.log("2", userObject);
   return userObject;
 };
-userSchema.statics.findByCredentials = async (email, password)=>{
-  const user = await User.findOne({email});
+userSchema.statics.findByCredentials = async (email, password) => {
+  const user = await User.findOne({ email });
   console.log(user);
   if (!user) {
-    throw new Error('Unable to Login');
+    throw new Error("Unable to Login");
   }
   console.log(user.password, password);
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error('Unable to login');
+    throw new Error("Unable to login");
   }
   return user;
 };
 // Hash the Plain Test Password bnefore saving
-userSchema.pre('save', async function(next) {
+userSchema.pre("save", async function (next) {
   const user = this;
-  if (user.isModified('password')) {
+  if (user.isModified("password")) {
     user.password = await bcrypt.hash(user.password, 8);
   }
   next();
 });
 
+const User = mongoose.model("User", userSchema);
 
-const User = mongoose.model('User', userSchema);
-
-
-module.exports = {User};
+module.exports = { User };
