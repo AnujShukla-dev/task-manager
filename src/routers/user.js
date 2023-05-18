@@ -2,6 +2,7 @@ const express = require("express");
 const { User } = require("../models/user");
 const { Task } = require("../models/task.js");
 const auth = require("../middleware/auth.js");
+const {sendWelomeEmail,deleteAccountEmail} = require('../emails/account.js')
 const sharp = require ('sharp')
 const multer = require("multer");
 const upload = multer({
@@ -27,6 +28,7 @@ router.post("/users", async (req, res) => {
   const user = new User(req.body);
   try {
     await user.save();
+    sendWelomeEmail(user.email,user.name);
     const token = await user.generateAuthToken();
     res.status(201).send({ user, token });
   } catch (e) {
@@ -35,30 +37,25 @@ router.post("/users", async (req, res) => {
 });
 
 router.get("/users/me", auth, async (req, res) => {
-  console.log(req.token);
   res.send(req.user);
 });
 
 router.post("/users/login", async (req, res) => {
   try {
     // eslint-disable-next-line max-len
-    console.log(req.body.password);
     const user = await User.findByCredentials(
       req.body.email,
       req.body.password
     );
     const token = await user.generateAuthToken();
-    console.log(user);
     res.send({ user, token });
   } catch (e) {
-    console.log(e);
     res.status(400).send(e);
   }
 });
 
 router.patch("/user/me", auth, async (req, res) => {
   const updates = Object.keys(req.body);
-  console.log(updates);
   const allowUpdates = ["name", "email", "password", "age"];
   // eslint-disable-next-line max-len
   const isValidOperation = updates.every((update) =>
@@ -86,6 +83,7 @@ router.delete("/user/me", auth, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.user._id);
     await Task.deleteMany({ owner: user._id });
+    deleteAccountEmail(user.email,user.name)
     res.send(user);
   } catch (e) {
     res.status(400).send(e);
@@ -111,7 +109,6 @@ router.post("/user/logoutAll", auth, async (req, res) => {
     await req.user.save();
     res.send();
   } catch (e) {
-    console.log(e);
     res.status(500).send();
   }
 });

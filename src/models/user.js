@@ -61,7 +61,7 @@ userSchema.virtual("tasks", {
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
-  const token = jwt.sign({ _id: user._id.toString() }, "thisismynewcourse");
+  const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET);
   user.tokens = user.tokens.concat({ token });
   await user.save();
   return token;
@@ -70,19 +70,15 @@ userSchema.methods.generateAuthToken = async function () {
 userSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
-  console.log("1", userObject);
   delete userObject.password;
   delete userObject.tokens;
-  console.log("2", userObject);
   return userObject;
 };
 userSchema.statics.findByCredentials = async (email, password) => {
   const user = await User.findOne({ email });
-  console.log(user);
   if (!user) {
     throw new Error("Unable to Login");
   }
-  console.log(user.password, password);
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     throw new Error("Unable to login");
