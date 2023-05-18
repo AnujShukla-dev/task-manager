@@ -15,6 +15,9 @@ app.post('/upload', upload.single('upload'), (req,res)=>{
 // app.use((req, res, next)=>{
 // res.status(500).send("Site is under maintenance")
 // });
+app.get('/helth',(req,res)=>{
+  res.status(200).send('ok')
+})
 
 app.use(express.json());
 app.use(userRouter);
